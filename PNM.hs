@@ -1,16 +1,17 @@
+module PNM(parseP6) where
+
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Lazy as L
 import Data.Char (isSpace)
+import Data.Int
 
-data Pixmap = Pixmap {
-    width :: Int,
-    height :: Int,
-    maximum :: Int,
-    raster :: L.ByteString
-} deriving (Eq)
+import Pixmap
 
-instance Show Pixmap where
-    show (Pixmap w h m _) = "Pixmap " ++ show w ++ " " ++ show h ++ " " ++ show m
+bindParse :: Parse a -> (a -> Parse b) -> Parse b
+bindParse p f = 
+
+bail :: String -> Parse a
+bail error = Parse $ \s -> Left $ "At byte " ++ offset s ++ ": " ++ error
 
 -- Read the magic number from a PNM file.
 matchHeader :: L.ByteString -> L.ByteString -> Maybe L.ByteString
@@ -19,16 +20,16 @@ matchHeader magic s
     | otherwise = Nothing
 
 -- Read a positive integer from a ByteString.
-readPositiveInteger :: L.ByteString -> Maybe (Int, L.ByteString)
-readPositiveInteger s = case L8.readInt s of
-    Nothing -> Nothing
+readPositiveInteger :: Parse Int
+readPositiveInteger s = case L8.readInt (string s) of
+    Nothing -> 
     Just (n, s)
         | n < 0 -> Nothing
         | otherwise -> Just (fromIntegral n, s)
 
 -- Read n bytes from a ByteString and return the ByteString and what remains.
-getRaster :: Int -> L.ByteString -> Maybe (L.ByteString, L.ByteString)
-getRaster n s = let
+readBytes :: Int -> L.ByteString -> Maybe (L.ByteString, L.ByteString)
+readBytes n s = let
     count = fromIntegral n
     t@(prefix, theRest) = L.splitAt count s in
     if L.length prefix < count
@@ -38,6 +39,11 @@ getRaster n s = let
 -- Drop any whitespace until the next non-whitespace character.
 skipSpace :: (a, L.ByteString) -> Maybe (a, L.ByteString)
 skipSpace (a, s) = Just (a, L8.dropWhile isSpace s)
+
+-- Parse some input from a ByteString and skip trailing space.
+parseAndSkip :: (L.ByteString -> Maybe (a, L.ByteString))
+    -> L.ByteString -> Maybe (a, L.ByteString)
+parseAndSkip p s = p s >>= skipSpace
 
 parseP6 :: L.ByteString -> Maybe (Pixmap, L.ByteString)
 parseP6 s =
@@ -49,5 +55,5 @@ parseP6 s =
     skipSpace ((), s) >>= \(_, s) ->
     readPositiveInteger s >>= \(maxValue, s) ->
     skipSpace ((), s) >>= \(_, s) ->
-    getRaster (width * height) s >>= \(raster, s) ->
+    readBytes (width * height) s >>= \(raster, s) ->
     return (Pixmap width height maxValue raster, s)
