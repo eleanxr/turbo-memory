@@ -17,6 +17,11 @@ newtype Parse a = Parse {
     runParse :: ParseState -> Either String (a, ParseState)
 }
 
+parse :: Parse a -> L.ByteString -> Either String a
+parse p s = case runParse p (ParseState s 0) of
+    Left error -> Left error
+    Right (result, _) -> Right result
+
 -- Return implementation: Returns a new parser that maps
 -- its input state to the injected value.
 inject :: a -> Parse a
@@ -76,3 +81,30 @@ parseWhile p = (fmap p <$> peekByte) >>= \result ->
     if result == Just True
         then readByte >>= \b -> (b:) <$> parseWhile p
         else return []
+
+parseWhileWith :: (Word8 -> a) -> (a -> Bool) -> Parse [a]
+parseWhileWith f p = fmap f <$> parseWhile (p . f)
+
+assert :: Bool -> String -> Parse ()
+assert True _ = inject ()
+assert False message = bail message
+
+readNaturalNumber :: Parse Int
+readNaturalNumber = parseWhileWith w2c isDigit >>= \digits ->
+    if null digits
+        then fail "No digits found"
+        else let n = read digits in if n < 0
+            then fail "Integer overflow encountered"
+            else return n
+
+readBytes :: Int -> Parse L.ByteString
+readBytes n = getState >>= \inputState ->
+    let byteCount = fromIntegral n
+        (prefix, suffix) = L.splitAt byteCount (string inputState)
+        outputState = inputState {
+            offset = (offset inputState) + L.length prefix,
+            string = suffix }
+        in do
+            putState outputState
+            assert (L.length prefix == byteCount) "Failed to read bytes"
+            return prefix
