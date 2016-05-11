@@ -20,3 +20,21 @@ encryptBlock :: RandomGen g => L.ByteString -> g -> L.ByteString
 encryptBlock string generator = L.pack $
     getNRandoms (L.length string) generator
 
+type Block = L.ByteString
+
+splitBlocks :: Int64 -> L.ByteString -> [Block]
+splitBlocks n s
+    | s == L.empty = []
+    |otherwise = (firstBlock: splitBlocks n theRest)
+    where (firstBlock, theRest) = L.splitAt n s
+
+mapBlocks :: Int64 -> (Block -> Block) -> L.ByteString -> L.ByteString
+mapBlocks = undefined
+
+data EncryptionState = EncryptionState {
+    generator :: StdGen,
+    dictionary :: M.Map L.ByteString L.ByteString,
+    bytes :: L.ByteString
+}
+
+type Encryption = State EncryptionState
