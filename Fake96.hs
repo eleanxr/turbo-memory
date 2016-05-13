@@ -4,9 +4,11 @@ import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.State
 import System.Random
-import Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Word
 import Data.Int
+import System.Random
 
 getNRandoms :: (RandomGen g, Random a) => Int64 -> g -> [a]
 getNRandoms n generator
@@ -16,8 +18,8 @@ getNRandoms n generator
 
 -- Simple "encryption" function that just replaces each byte with a
 -- pseudorandom byte.
-encryptBlock :: RandomGen g => L.ByteString -> g -> L.ByteString
-encryptBlock string generator = L.pack $
+encryptBlock :: RandomGen g => g -> L.ByteString -> L.ByteString
+encryptBlock generator string  = L.pack $
     getNRandoms (L.length string) generator
 
 type Block = L.ByteString
@@ -28,8 +30,13 @@ splitBlocks n s
     |otherwise = (firstBlock: splitBlocks n theRest)
     where (firstBlock, theRest) = L.splitAt n s
 
-mapBlocks :: Int64 -> (Block -> Block) -> L.ByteString -> L.ByteString
-mapBlocks = undefined
+encryptBlocks :: RandomGen g => g -> [Block] -> [Block]
+encryptBlocks generator = map (encryptBlock generator)
+
+encrypt :: L8.ByteString -> IO L8.ByteString
+encrypt s = do
+    rs <- newStdGen
+    return $ L.intercalate L.empty $ encryptBlocks rs (splitBlocks 12 s)
 
 data EncryptionState = EncryptionState {
     generator :: StdGen,
