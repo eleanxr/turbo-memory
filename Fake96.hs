@@ -33,10 +33,10 @@ splitBlocks n s
 encryptBlocks :: RandomGen g => g -> [Block] -> [Block]
 encryptBlocks generator = map (encryptBlock generator)
 
-encrypt :: L8.ByteString -> IO L8.ByteString
+encrypt :: L.ByteString -> IO L.ByteString
 encrypt s = do
     rs <- newStdGen
-    return $ L.intercalate L.empty $ encryptBlocks rs (splitBlocks 12 s)
+    return $ L.concat $ encryptBlocks rs (splitBlocks 12 s)
 
 data EncryptionState = EncryptionState {
     generator :: StdGen,
