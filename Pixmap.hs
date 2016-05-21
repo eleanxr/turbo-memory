@@ -5,7 +5,7 @@ import qualified Data.ByteString.Lazy as L
 data Pixmap = Pixmap {
     width :: Int,
     height :: Int,
-    maximum :: Int,
+    maxValue :: Int,
     raster :: L.ByteString
 } deriving (Eq)
 
