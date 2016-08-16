@@ -27,7 +27,7 @@ type Block = L.ByteString
 splitBlocks :: Int64 -> L.ByteString -> [Block]
 splitBlocks n s
     | s == L.empty = []
-    |otherwise = (firstBlock: splitBlocks n theRest)
+    | otherwise = (firstBlock: splitBlocks n theRest)
     where (firstBlock, theRest) = L.splitAt n s
 
 encryptBlocks :: RandomGen g => g -> [Block] -> [Block]

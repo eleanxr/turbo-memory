@@ -5,6 +5,7 @@ import Data.Int
 import Data.Word
 import Data.Char
 import Control.Monad
+import Control.Applicative
 
 -- ADT to maintain parser state.
 data ParseState = ParseState {
@@ -27,8 +28,9 @@ parse p s = case runParse p (ParseState s 0) of
 inject :: a -> Parse a
 inject a = Parse (\s -> Right (a, s))
 
--- Bind implementation: Chains two parsers together by passing the output of the first
--- as the input to the second and returning the state after the second evaluation.
+-- Bind implementation: Chains two parsers together by passing the output of
+-- the first as the input to the second and returning the state after the
+-- second evaluation.
 chain :: Parse a -> (a -> Parse b) -> Parse b
 chain firstParser secondParser = Parse chainedParser where
     chainedParser inputState = case runParse firstParser inputState of
