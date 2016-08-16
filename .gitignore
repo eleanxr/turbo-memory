@@ -1,3 +1,6 @@
 *.hi
 *.o
 image-crypto
+dist/
+.cabal-sandbox/
+cabal.sandbox.config
